@@ -1,53 +1,97 @@
 import re
 
+def parse_ics_to_csv(file_path):
+    """
+    Lis un fichier ICS contenant un événement et le convertit en pseudo-CSV.
 
-def parse_ics(file_path):
-    # Ouvrir le fichier .ics
-    with open("evenementSAE_15.ics", 'r', encoding='utf-8') as file:
+    :param file_path: Chemin vers le fichier ICS
+    :return: Chaîne de caractères au format pseudo-CSV
+    """
+    # Lire le fichier ICS
+    with open(file_path, 'r', encoding='utf-8') as file:
         content = file.read()
 
-    # Liste pour stocker les événements
-    events = []
+    # Expression régulière pour extraire un événement unique
+    event_pattern = re.compile(r'BEGIN:VEVENT(.*?)END:VEVENT', re.DOTALL)
+    event_match = event_pattern.search(content)
 
-    # Expression régulière pour extraire les informations d'un événement
-    event_pattern = re.compile(
-        r'BEGIN:VEVENT.*?END:VEVENT', re.DOTALL)
+    if not event_match:
+        raise ValueError("Aucun événement trouvé dans le fichier ICS.")
 
-    # Recherche de tous les événements dans le fichier
-    events_raw = event_pattern.findall(content)
+    event = event_match.group(1)
 
-    for event in events_raw:
-        event_data = {}
+    # Dictionnaire des clés ICS et leurs équivalents en pseudo-CSV
+    csv_data = {
+        'UID': None,
+        'DTSTART': None,
+        'DUREE': None,
+        'MODALITE': None,
+        'SUMMARY': None,
+        'LOCATION': None,
+        'PROFESSEURS': None,
+        'GROUPES': None
+    }
 
-        # Extraction des informations spécifiques à partir des événements
-        for key, pattern in {
-            'DTSTAMP': r'DTSTAMP:(\S+)',
-            'DTSTART': r'DTSTART:(\S+)',
-            'DTEND': r'DTEND:(\S+)',
-            'SUMMARY': r'SUMMARY:(.*?)(?=\n|$)',
-            'LOCATION': r'LOCATION:(.*?)(?=\n|$)',
-            'DESCRIPTION': r'DESCRIPTION:(.*?)(?=\n|$)',
-            'UID': r'UID:(\S+)',
-            'CREATED': r'CREATED:(\S+)',
-            'LAST-MODIFIED': r'LAST-MODIFIED:(\S+)',
-            'SEQUENCE': r'SEQUENCE:(\S+)'
-        }.items():
-            match = re.search(pattern, event)
-            if match:
-                event_data[key] = match.group(1).strip()
+    # Extraire les informations nécessaires
+    patterns = {
+        'UID': r'UID:(\S+)',
+        'DTSTART': r'DTSTART:(\d{8}T\d{6}Z)',
+        'DTEND': r'DTEND:(\d{8}T\d{6}Z)',
+        'SUMMARY': r'SUMMARY:(.+)',
+        'LOCATION': r'LOCATION:(.+)',
+        'DESCRIPTION': r'DESCRIPTION:(.+)'
+    }
 
-        events.append(event_data)
+    extracted_data = {}
+    for key, pattern in patterns.items():
+        match = re.search(pattern, event)
+        if match:
+            extracted_data[key] = match.group(1).strip()
 
-    return events
+    # Calculer la durée (DTEND - DTSTART)
+    if 'DTSTART' in extracted_data and 'DTEND' in extracted_data:
+        from datetime import datetime
 
+        dtstart = datetime.strptime(extracted_data['DTSTART'], '%Y%m%dT%H%M%SZ')
+        dtend = datetime.strptime(extracted_data['DTEND'], '%Y%m%dT%H%M%SZ')
+        duration = dtend - dtstart
+
+        hours, remainder = divmod(duration.seconds, 3600)
+        minutes = remainder // 60
+        csv_data['DUREE'] = f"{hours:02}:{minutes:02}"
+
+    # Mapper les données extraites aux clés pseudo-CSV
+    csv_data['UID'] = extracted_data.get('UID', '')
+
+    if 'DTSTART' in extracted_data:
+        dtstart = datetime.strptime(extracted_data['DTSTART'], '%Y%m%dT%H%M%SZ')
+        csv_data['DATE'] = dtstart.strftime('%d-%m-%Y')
+        csv_data['HEURE'] = dtstart.strftime('%H:%M')
+
+    csv_data['MODALITE'] = extracted_data.get('SUMMARY', '').split(' ')[0]  # Supposons que la modalité soit le premier mot de SUMMARY
+    csv_data['SUMMARY'] = extracted_data.get('SUMMARY', '')
+    csv_data['LOCATION'] = extracted_data.get('LOCATION', '')
+
+    # Extraction des professeurs et groupes à partir de DESCRIPTION
+    description = extracted_data.get('DESCRIPTION', '')
+    description_parts = description.split('\n')
+    if len(description_parts) > 1:
+        csv_data['PROFESSEURS'] = description_parts[1]
+        csv_data['GROUPES'] = description_parts[0]
+
+    # Construire la chaîne pseudo-CSV
+    csv_line = (
+        f"{csv_data['UID']};{csv_data['DATE']};{csv_data['HEURE']};{csv_data['DUREE']};"
+        f"{csv_data['MODALITE']};{csv_data['SUMMARY']};{csv_data['LOCATION']};"
+        f"{csv_data['PROFESSEURS']};{csv_data['GROUPES']}"
+    )
+
+    return csv_line
 
 # Exemple d'utilisation
-file_path = 'evenementSAE_15.ics'  # Remplacez par le chemin de votre fichier ICS
-events = parse_ics("evenementSAE_15.ics")
-
-# Affichage des événements extraits
-for event in events:
-    print("Événement:")
-    for key, value in event.items():
-        print(f"{key}: {value}")
-    print("\n")
+file_path = 'evenementSAE_15GroupeA1.ics'  # Remplacez par le chemin de votre fichier ICS
+try:
+    pseudo_csv = parse_ics_to_csv(file_path)
+    print("Pseudo-CSV:", pseudo_csv)
+except Exception as e:
+    print("Erreur:", e)
