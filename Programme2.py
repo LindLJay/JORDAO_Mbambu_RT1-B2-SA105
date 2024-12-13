@@ -1,10 +1,10 @@
 import re
 from datetime import datetime
 
-def parse_ics_to_csv(file_path):
+def parse_ics_to_csv(file_path, output_csv):
     """
     Lit un fichier ICS contenant plusieurs événements et les convertit en pseudo-CSV.
-    Chaque ligne correspond à un événement unique, avec des valeurs séparées par des points-virgules.
+    Ajoute les lignes pseudo-CSV à la fin du fichier CSV existant.
     """
     # Lire le contenu du fichier ICS
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -89,16 +89,20 @@ def parse_ics_to_csv(file_path):
         # Ajouter la ligne formatée à la liste des résultats
         csv_lines.append(csv_line)
 
+    # Ajouter les lignes au fichier CSV
+    with open(output_csv, 'a', encoding='utf-8') as file:
+        for line in csv_lines:
+            file.write(line + '\n')
+
     return csv_lines  # Retourner toutes les lignes pseudo-CSV
 
 # Exemple d'utilisation
 file_path = 'ADE_RT1_Septembre2023_Decembre2023.ics'  # Remplacez par le chemin de votre fichier ICS
+output_csv = 'output.csv'  # Fichier CSV de sortie
+
 try:
-    pseudo_csv_lines = parse_ics_to_csv(file_path)
-    print("Pseudo-CSV:")
-    for line in pseudo_csv_lines:
-        # Afficher chaque ligne pseudo-CSV pour vérification
-        print(line)
+    pseudo_csv_lines = parse_ics_to_csv(file_path, output_csv)
+    print("Les données ont été ajoutées avec succès au fichier CSV.")
 except Exception as e:
     # Gérer les erreurs et afficher un message approprié
     print("Erreur:", e)
