@@ -98,7 +98,7 @@ def parse_ics_to_csv(file_path, output_csv):
 
 # Exemple d'utilisation
 file_path = 'ADE_RT1_Septembre2023_Decembre2023.ics'  # Remplacez par le chemin de votre fichier ICS
-output_csv = 'output.csv'  # Fichier CSV de sortie
+output_csv = 'ADE_RT1_Septembre2023_Decembre2023.csv'  # Fichier CSV de sortie
 
 try:
     pseudo_csv_lines = parse_ics_to_csv(file_path, output_csv)
