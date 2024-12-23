@@ -30,8 +30,6 @@ def parse_ics_to_csv(file_path):
         'MODALITE': None,     # Modalité (dérivé du champ SUMMARY)
         'SUMMARY': None,      # Résumé ou description courte de l'événement
         'LOCATION': None,     # Lieu où l'événement se déroule
-        'PROFESSEURS': None,  # Liste des professeurs impliqués
-        'GROUPES': None       # Groupes concernés par l'événement
     }
 
     # Définir des expressions régulières pour extraire des champs spécifiques
@@ -84,17 +82,12 @@ def parse_ics_to_csv(file_path):
     # Extraire les informations sur les professeurs et groupes à partir de DESCRIPTION
     description = extracted_data.get('DESCRIPTION', '')
     description_parts = description.split('\n')  # Diviser la description en lignes
-    if len(description_parts) > 1:
-        # Si plusieurs lignes existent, mapper aux champs appropriés
-        csv_data['PROFESSEURS'] = description_parts[1]  # Ligne 2 : Professeurs
-        csv_data['GROUPES'] = description_parts[0]      # Ligne 1 : Groupes
 
     # Construire la ligne pseudo-CSV
     # Chaque champ est séparé par un point-virgule
     csv_line = (
         f"{csv_data['UID']};{csv_data['DATE']};{csv_data['HEURE']};{csv_data['DUREE']};"
         f"{csv_data['MODALITE']};{csv_data['SUMMARY']};{csv_data['LOCATION']};"
-        f"{csv_data['PROFESSEURS']};{csv_data['GROUPES']}"
     )
 
     return csv_line  # Retourner la chaîne formatée au format pseudo-CSV

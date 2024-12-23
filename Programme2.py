@@ -22,7 +22,7 @@ def parse_ics_to_csv(file_path, output_csv):
     csv_lines = []
 
     # Liste des en-têtes pour les colonnes pseudo-CSV
-    csv_headers = ['UID', 'DATE', 'HEURE', 'DUREE', 'MODALITE', 'SUMMARY', 'LOCATION', 'PROFESSEURS', 'GROUPES']
+    csv_headers = ['UID', 'DATE', 'HEURE', 'DUREE', 'MODALITE', 'SUMMARY', 'LOCATION']
 
     # Parcourir chaque événement extrait
     for event in events:
@@ -75,15 +75,11 @@ def parse_ics_to_csv(file_path, output_csv):
         # Extraire les informations sur les professeurs et les groupes à partir de DESCRIPTION
         description = extracted_data.get('DESCRIPTION', '')
         description_parts = description.split('\n')  # Diviser la description par ligne
-        if len(description_parts) > 1:
-            csv_data['PROFESSEURS'] = description_parts[1]  # Deuxième ligne : professeurs
-            csv_data['GROUPES'] = description_parts[0]  # Première ligne : groupes
 
         # Construire une ligne pseudo-CSV avec les données formatées
         csv_line = (
             f"{csv_data['UID']};{csv_data['DATE']};{csv_data['HEURE']};{csv_data['DUREE']};"
             f"{csv_data['MODALITE']};{csv_data['SUMMARY']};{csv_data['LOCATION']};"
-            f"{csv_data['PROFESSEURS']};{csv_data['GROUPES']}"
         )
 
         # Ajouter la ligne formatée à la liste des résultats
