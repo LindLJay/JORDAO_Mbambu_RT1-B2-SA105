@@ -1,0 +1,16 @@
+IP Address,Occurrences
+184.107.43.74,82
+192.168.190.130,12
+130.190.168.192,1
+
+Port,Occurrences
+50019,4
+50245,3
+58466,1
+53220,1
+
+Category,Total Occurrences,Example
+Suspicious Port Activity,4,"11:42:04.766656 IP BP-Linux8.ssh > 192.168.190.130.50019: Flags [P.], seq 2243505564:2243505672, ack 1972915080, win 312, options [nop,nop,TS val 102917262 ecr 377952805], length 108"
+Unusual DNS Query,2,11:42:05.768334 IP BP-Linux8.58466 > ns1.lan.rt.domain: 16550+ PTR? 130.190.168.192.in-addr.arpa. (46)
+Suspicious HTTP Traffic,81,"11:42:06.681248 IP 190-0-175-100.gba.solunet.com.ar.2465 > 184.107.43.74.http: Flags [S], seq 326991629:326991749, win 512, length 120: HTTP"
+Potential SYN Flood,81,"11:42:06.681248 IP 190-0-175-100.gba.solunet.com.ar.2465 > 184.107.43.74.http: Flags [S], seq 326991629:326991749, win 512, length 120: HTTP"
