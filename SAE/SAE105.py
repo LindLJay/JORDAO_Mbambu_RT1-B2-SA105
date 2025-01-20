@@ -64,109 +64,92 @@ html_template = """
 
 # Expressions régulières pour extraire les données
 ip_pattern = re.compile(r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})")
+time_pattern = re.compile(r"(\d{2}:\d{2}:\d{2}\.\d{6})")  # Format de l'heure
 port_pattern = re.compile(r"(?<=\.)\d{1,5}(?=[:\s])")
 dns_pattern = re.compile(r"PTR\?.*\.in-addr\.arpa")
-suspicious_ports = {22, 80, 443, 50019}
+suspicious_ports = {22, 80, 443, 50019}  # Ports à surveiller
 
 # Collecte des données
 ip_counter = Counter()
 port_counter = Counter()
 dns_queries = []
 suspicious_logs = []
+ip_time_intervals = defaultdict(lambda: {"first_seen": None, "last_seen": None})  # Pour les IPs et leurs intervalles de temps
+
+# Analyse avancée
+activity_analysis = []
 
 print("Analyse du fichier pour trouver les adresses IP, les ports et les activités suspectes...")
 with open(input_file, "r") as file:
     for line in file:
+        # Extraction des données importantes
+        time_match = time_pattern.search(line)
+        timestamp = time_match.group(1) if time_match else "Inconnu"
         ips = ip_pattern.findall(line)
-        if ips:
-            ip_counter.update(ips)
-
         ports = port_pattern.findall(line)
+
+        # Comptabilisation des IPs et ports
+        if ips:
+            for ip in ips:
+                ip_counter.update([ip])
+                if not ip_time_intervals[ip]["first_seen"]:
+                    ip_time_intervals[ip]["first_seen"] = timestamp
+                ip_time_intervals[ip]["last_seen"] = timestamp
+
         if ports:
             port_counter.update(ports)
 
+        # Analyse des activités suspectes
         if dns_pattern.search(line):
             dns_queries.append(line.strip())
+            activity_analysis.append({
+                "timestamp": timestamp,
+                "event": "Requête DNS inverse détectée",
+                "details": line.strip(),
+                "reason": "Recherche PTR sur une adresse IP"
+            })
 
         for port in ports:
             if int(port) in suspicious_ports:
                 suspicious_logs.append(line.strip())
-
-# Graphiques
-# Top 10 des IPs
-top_ips = ip_counter.most_common(10)
-ips, counts = zip(*top_ips) if top_ips else ([], [])
-plt.bar(ips, counts, color="skyblue")
-plt.xlabel("Adresses IP")
-plt.ylabel("Occurrences")
-plt.title("Top 10 des adresses IP")
-plt.xticks(rotation=45)
-plt.tight_layout()
-plt.savefig("static/top_ips.png")
-plt.close()
-
-# Top 10 des ports
-top_ports = port_counter.most_common(10)
-ports, counts = zip(*top_ports) if top_ports else ([], [])
-plt.bar(ports, counts, color="lightgreen")
-plt.xlabel("Ports")
-plt.ylabel("Occurrences")
-plt.title("Top 10 des ports")
-plt.tight_layout()
-plt.savefig("static/top_ports.png")
-plt.close()
-
-# Répartition des ports (Camembert)
-port_distribution = port_counter.most_common(10)
-labels = [f"Port {port}" for port, _ in port_distribution]
-sizes = [count for _, count in port_distribution]
-
-if sizes:
-    plt.figure(figsize=(8, 8))
-    plt.pie(sizes, labels=labels, autopct="%1.1f%%", startangle=140, colors=plt.cm.Paired.colors)
-    plt.title("Répartition des ports")
-    plt.savefig("static/port_distribution.png")
-    plt.close()
+                activity_analysis.append({
+                    "timestamp": timestamp,
+                    "event": "Connexion suspecte détectée",
+                    "details": line.strip(),
+                    "reason": f"Port critique utilisé ({port})"
+                })
 
 # Génération de Markdown
 markdown_content = "# Analyse du trafic réseau\n\n"
 markdown_content += "## Top 10 des adresses IP\n"
-for ip, count in top_ips:
-    markdown_content += f"- **{ip}** : {count} occurrences\n"
+for ip, count in ip_counter.most_common(10):
+    first_seen = ip_time_intervals[ip]["first_seen"]
+    last_seen = ip_time_intervals[ip]["last_seen"]
+    markdown_content += f"- **{ip}** : {count} occurrences (Première apparition : {first_seen}, Dernière apparition : {last_seen})\n"
 
 markdown_content += "\n## Top 10 des ports\n"
-for port, count in top_ports:
+for port, count in port_counter.most_common(10):
     markdown_content += f"- **Port {port}** : {count} occurrences\n"
 
-markdown_content += "\n## Requêtes DNS suspectes\n"
-if dns_queries:
-    markdown_content += "\n".join(f"- `{query}`" for query in dns_queries)
-else:
-    markdown_content += "Aucune requête DNS suspecte détectée.\n"
-
-markdown_content += "\n## Activités suspectes\n"
-if suspicious_logs:
-    markdown_content += "\n".join(f"- `{log}`" for log in suspicious_logs[:10])
+markdown_content += "\n## Analyse détaillée des activités suspectes\n"
+if activity_analysis:
+    for activity in activity_analysis:
+        markdown_content += f"- **{activity['timestamp']}** : {activity['event']}\n"
+        markdown_content += f"  - Détails : `{activity['details']}`\n"
+        markdown_content += f"  - Raison : {activity['reason']}\n\n"
 else:
     markdown_content += "Aucune activité suspecte détectée.\n"
 
+# Écriture du fichier Markdown
 with open(markdown_output, "w") as md_file:
     md_file.write(markdown_content)
 
-# CSV Export
+# Export CSV avec détails enrichis
 with open(csv_output, "w", newline="") as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow(["Adresse IP", "Occurrences"])
-    for ip, count in ip_counter.most_common():
-        writer.writerow([ip, count])
-    writer.writerow([])
-    writer.writerow(["Port", "Occurrences"])
-    for port, count in port_counter.most_common():
-        writer.writerow([port, count])
-    writer.writerow([])
-    writer.writerow(["Logs suspects"])
-    for log in suspicious_logs:
-        writer.writerow([log])
+    writer.writerow(["Adresse IP", "Occurrences", "Première apparition", "Dernière apparition"])
+    for ip, count in ip_counter.items():
+        writer.writerow([ip, count, ip_time_intervals[ip]["first_seen"], ip_time_intervals[ip]["last_seen"]])
 
 # Flask App
 app = Flask(__name__)
