@@ -74,7 +74,8 @@ ip_counter = Counter()
 port_counter = Counter()
 dns_queries = []
 suspicious_logs = []
-ip_time_intervals = defaultdict(lambda: {"first_seen": None, "last_seen": None})  # Pour les IPs et leurs intervalles de temps
+ip_time_intervals = defaultdict(
+    lambda: {"first_seen": None, "last_seen": None})  # Pour les IPs et leurs intervalles de temps
 
 # Analyse avancée
 activity_analysis = []
@@ -144,15 +145,81 @@ else:
 with open(markdown_output, "w") as md_file:
     md_file.write(markdown_content)
 
-# Export CSV avec détails enrichis
-with open(csv_output, "w", newline="") as csvfile:
-    writer = csv.writer(csvfile)
-    writer.writerow(["Adresse IP", "Occurrences", "Première apparition", "Dernière apparition"])
-    for ip, count in ip_counter.items():
-        writer.writerow([ip, count, ip_time_intervals[ip]["first_seen"], ip_time_intervals[ip]["last_seen"]])
+
+# Fonction pour extraire les données TCPDUMP
+def extract_tcpdump_data(file_path):
+    try:
+        with open(file_path, encoding="utf8") as file:
+            lines = file.readlines()
+    except FileNotFoundError:
+        print(f"Le fichier n'existe pas à l'emplacement {os.path.abspath(file_path)}")
+        return None
+
+    data = []
+
+    for line in lines:
+        if "Flags" in line:  # Vérifie la présence d'un flag dans la ligne
+            parts = line.split()
+            if len(parts) >= 9:  # Vérifie qu'il y a suffisamment d'informations
+                timestamp = parts[0]
+                src_ip = parts[2]
+                dst_ip = parts[4]
+                flag = parts[6]
+
+                # Recherche de la longueur du paquet à partir de "length"
+                length = "N/A"
+                if "length" in line:  # Vérifie si "length" est présent dans la ligne
+                    try:
+                        length_index = parts.index("length") + 1
+                        if length_index < len(parts):
+                            length = parts[length_index]  # Récupère la valeur après "length"
+                    except ValueError:
+                        length = "N/A"  # Si "length" n'est pas dans parts, on garde "N/A"
+
+                # Ajout des données dans la liste
+                data.append([timestamp, src_ip, dst_ip, flag, length])
+
+    return data
+
+
+# Fonction pour sauvegarder les données dans un fichier CSV
+def save_to_csv(data, csv_filename):
+    headers = ['Temps', 'IP Source', 'IP Destination', 'Flag', 'Longueur du Paquet']
+
+    with open(csv_filename, mode='w', newline='', encoding='utf8') as file:
+        writer = csv.writer(file)
+        writer.writerow(headers)
+        writer.writerows(data)
+
+
+# Extraction des données TCPDUMP et sauvegarde en CSV
+tcpdump_data = extract_tcpdump_data(input_file)
+if tcpdump_data:
+    save_to_csv(tcpdump_data, csv_output)
+
+
+# Fonction pour générer le graphique des Top 10 des ports
+def plot_top_ports(port_counter, output_file):
+    top_ports = port_counter.most_common(10)
+    ports, counts = zip(*top_ports)
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(ports, counts, color='orange')
+    plt.xlabel('Ports')
+    plt.ylabel('Nombre d\'occurrences')
+    plt.title('Top 10 des ports')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(output_file)
+    plt.close()
+
+
+# Générer le graphique des Top 10 des ports
+plot_top_ports(port_counter, "static/top_ports.png")
 
 # Flask App
 app = Flask(__name__)
+
 
 @app.route("/", methods=["GET", "POST"])
 def display_results():
@@ -174,6 +241,7 @@ def display_results():
     html_content = markdown.markdown(markdown_text)
 
     return render_template_string(html_template, content=html_content)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
