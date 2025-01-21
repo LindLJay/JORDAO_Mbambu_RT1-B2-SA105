@@ -11,7 +11,7 @@ if not os.path.exists("static"):
     os.makedirs("static")
 
 # Fichiers d'entrée et de sortie
-input_file = "fichier1000.txt"
+input_file = "DumpFile.txt"
 markdown_output = "Resumé_Markdown.md"
 csv_output = "Donnees_csv.csv"
 
@@ -66,13 +66,11 @@ html_template = """
 ip_pattern = re.compile(r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})")
 time_pattern = re.compile(r"(\d{2}:\d{2}:\d{2}\.\d{6})")  # Format de l'heure
 port_pattern = re.compile(r"(?<=\.)\d{1,5}(?=[:\s])")
-dns_pattern = re.compile(r"PTR\?.*\.in-addr\.arpa")
 suspicious_ports = {22, 80, 443, 50019}  # Ports à surveiller
 
 # Collecte des données
 ip_counter = Counter()
 port_counter = Counter()
-dns_queries = []
 suspicious_logs = []
 ip_time_intervals = defaultdict(
     lambda: {"first_seen": None, "last_seen": None})  # Pour les IPs et leurs intervalles de temps
@@ -99,16 +97,6 @@ with open(input_file, "r") as file:
 
         if ports:
             port_counter.update(ports)
-
-        # Analyse des activités suspectes
-        if dns_pattern.search(line):
-            dns_queries.append(line.strip())
-            activity_analysis.append({
-                "timestamp": timestamp,
-                "event": "Requête DNS inverse détectée",
-                "details": line.strip(),
-                "reason": "Recherche PTR sur une adresse IP"
-            })
 
         for port in ports:
             if int(port) in suspicious_ports:
@@ -197,6 +185,18 @@ tcpdump_data = extract_tcpdump_data(input_file)
 if tcpdump_data:
     save_to_csv(tcpdump_data, csv_output)
 
+# Génération de graphiques
+# Graphique pour les 10 IP les plus fréquentes
+top_ips = ip_counter.most_common(10)
+ips, counts = zip(*top_ips) if top_ips else ([], [])
+plt.bar(ips, counts)
+plt.xlabel("IP Addresses")
+plt.ylabel("Occurrences")
+plt.title("Top 10 IP Addresses")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.savefig("static/top_ips.png")  # Sauvegarde du graphique
+plt.close()
 
 # Fonction pour générer le graphique des Top 10 des ports
 def plot_top_ports(port_counter, output_file):
@@ -211,6 +211,18 @@ def plot_top_ports(port_counter, output_file):
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.savefig(output_file)
+    plt.close()
+
+# Graphique en camembert pour la répartition des ports
+port_distribution = port_counter.most_common(10)
+labels = [f"Port {port}" for port, _ in port_distribution]
+sizes = [count for _, count in port_distribution]
+
+if sizes:
+    plt.figure(figsize=(8, 8))
+    plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=140)
+    plt.title("Port Distribution")
+    plt.savefig("static/port_distribution.png")  # Sauvegarde du graphique
     plt.close()
 
 

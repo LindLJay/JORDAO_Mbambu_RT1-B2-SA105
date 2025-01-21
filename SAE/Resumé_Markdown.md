@@ -1,21 +1,28 @@
 # Analyse du trafic réseau
 
 ## Top 10 des adresses IP
-- **184.107.43.74** : 82 occurrences (Première apparition : 11:42:06.679971, Dernière apparition : 11:42:06.682619)
-- **192.168.190.130** : 12 occurrences (Première apparition : 11:42:04.766656, Dernière apparition : 11:42:06.681222)
-- **130.190.168.192** : 1 occurrences (Première apparition : 11:42:05.768334, Dernière apparition : 11:42:05.768334)
+- **184.107.43.74** : 2001 occurrences (Première apparition : 11:42:06.679971, Dernière apparition : 11:42:06.711723)
+- **192.168.190.130** : 126 occurrences (Première apparition : 11:42:04.766656, Dernière apparition : 11:42:53.889151)
+- **192.168.115.1** : 84 occurrences (Première apparition : 11:42:12.689549, Dernière apparition : 11:42:53.724887)
+- **91.121.37.244** : 52 occurrences (Première apparition : 11:42:49.058155, Dernière apparition : 11:42:50.566333)
+- **201.181.244.35** : 32 occurrences (Première apparition : 11:42:10.342134, Dernière apparition : 11:42:11.117335)
+- **82.221.107.34** : 13 occurrences (Première apparition : 11:42:09.501517, Dernière apparition : 11:42:49.584635)
+- **93.184.220.29** : 12 occurrences (Première apparition : 11:42:10.380068, Dernière apparition : 11:42:50.475987)
+- **104.18.31.182** : 8 occurrences (Première apparition : 11:42:49.121163, Dernière apparition : 11:42:49.203866)
+- **142.250.201.163** : 2 occurrences (Première apparition : 11:42:27.206170, Dernière apparition : 11:42:30.816596)
+- **161.3.1.48** : 2 occurrences (Première apparition : 11:42:29.117091, Dernière apparition : 11:42:30.715366)
 
 ## Top 10 des ports
-- **Port 50019** : 8 occurrences
-- **Port 50245** : 4 occurrences
-- **Port 58466** : 2 occurrences
-- **Port 53220** : 2 occurrences
-- **Port 74** : 1 occurrences
-- **Port 2465** : 1 occurrences
-- **Port 2466** : 1 occurrences
-- **Port 2467** : 1 occurrences
-- **Port 2468** : 1 occurrences
-- **Port 2469** : 1 occurrences
+- **Port 34862** : 1082 occurrences
+- **Port 53324** : 688 occurrences
+- **Port 40682** : 550 occurrences
+- **Port 40678** : 542 occurrences
+- **Port 53328** : 537 occurrences
+- **Port 53325** : 534 occurrences
+- **Port 53329** : 518 occurrences
+- **Port 53326** : 466 occurrences
+- **Port 40684** : 419 occurrences
+- **Port 40680** : 411 occurrences
 
 ## Analyse détaillée des activités suspectes
 - **11:42:04.766656** : Connexion suspecte détectée
@@ -49,8 +56,4 @@
 - **11:42:04.785454** : Connexion suspecte détectée
   - Détails : `11:42:04.785454 IP 192.168.190.130.50019 > BP-Linux8.ssh: Flags [.], ack 288, win 7320, options [nop,nop,TS val 377953205 ecr 102917262], length 0`
   - Raison : Port critique utilisé (50019)
-
-- **11:42:05.768334** : Requête DNS inverse détectée
-  - Détails : `11:42:05.768334 IP BP-Linux8.58466 > ns1.lan.rt.domain: 16550+ PTR? 130.190.168.192.in-addr.arpa. (46)`
-  - Raison : Recherche PTR sur une adresse IP
 
